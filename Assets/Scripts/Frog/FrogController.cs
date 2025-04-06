@@ -9,10 +9,20 @@ using UnityEngine.InputSystem;
 /// </summary>
 public class FrogController : MonoBehaviour
 {
+    #region Enums
+    /// <summary>
+    /// Represents the possible movement directions for the frog
+    /// </summary>
+    private enum Direction
+    {
+        None, Left, Right, Up
+    }
+    #endregion
+
     #region Serialized Fields
     [Header("Jump Settings")]
     [Tooltip("The vertical height for a single jump")]
-    [SerializeField] private float jumpHeight = 1f;
+    [SerializeField] private float jumpDistance = 2.1f;
 
     [Tooltip("The speed at which the frog moves during jumps")]
     [SerializeField] private float jumpMovementSpeed = 0.134f;
@@ -22,11 +32,12 @@ public class FrogController : MonoBehaviour
     private Rigidbody2D _rigidbody;
     private Animator _animator;
     private Vector2 _targetPosition;
-    private float _currentJumpHeight;
+    private float _currentJumpDistance;
     private bool _isJumpButtonHeld;
     private bool _isJumping;
     private bool _shouldTriggerJump;
     private Vector2 _touchPosition;
+    private Direction dir = Direction.None;
     #endregion
 
     #region Unity Lifecycle Methods
@@ -70,8 +81,7 @@ public class FrogController : MonoBehaviour
     {
         if (context.performed && !_isJumping)
         {
-            _currentJumpHeight = jumpHeight;
-            _targetPosition = new Vector2(transform.position.x, transform.position.y + _currentJumpHeight);
+            _currentJumpDistance = jumpDistance;
             _shouldTriggerJump = true;
         }
     }
@@ -84,14 +94,13 @@ public class FrogController : MonoBehaviour
     {
         if (context.performed && !_isJumping)
         {
-            _currentJumpHeight = jumpHeight * 2;
+            _currentJumpDistance = jumpDistance * 2;
             _isJumpButtonHeld = true;
         }
 
         if (context.canceled && _isJumpButtonHeld)
         {
             _isJumpButtonHeld = false;
-            _targetPosition = new Vector2(transform.position.x, transform.position.y + _currentJumpHeight);
             _shouldTriggerJump = true;
         }
     }
@@ -104,8 +113,22 @@ public class FrogController : MonoBehaviour
     {
         if (context.performed)
         {
-            _touchPosition = context.ReadValue<Vector2>();
-            // Touch position can be used for additional controls if needed
+            _touchPosition = Camera.main.ScreenToWorldPoint(context.ReadValue<Vector2>());
+            var offset = (_touchPosition - (Vector2)transform.position).normalized;
+            if (Mathf.Abs(offset.x) <= 0.7f)
+            {
+                dir = Direction.Up;
+            }
+            else if (offset.x < 0)
+            {
+                dir = Direction.Left;
+            }
+            else if (offset.x > 0)
+            {
+                dir = Direction.Right;
+            }
+
+            Debug.Log("Direction: " + dir);
         }
     }
     #endregion
@@ -116,7 +139,20 @@ public class FrogController : MonoBehaviour
     /// </summary>
     private void TriggerJumpAnimation()
     {
+        switch (dir)
+        {
+            case Direction.Up:
+                _targetPosition = new Vector2(transform.position.x, transform.position.y + _currentJumpDistance);
+                break;
+            case Direction.Left:
+                _targetPosition = new Vector2(transform.position.x - _currentJumpDistance, transform.position.y);
+                break;
+            case Direction.Right:
+                _targetPosition = new Vector2(transform.position.x + _currentJumpDistance, transform.position.y);
+                break;
+        }
         _animator.SetTrigger("Jump");
+
     }
 
     /// <summary>
