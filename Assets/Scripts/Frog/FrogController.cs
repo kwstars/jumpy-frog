@@ -31,6 +31,7 @@ public class FrogController : MonoBehaviour
     #region Private Fields
     private Rigidbody2D _rigidbody;
     private Animator _animator;
+    private SpriteRenderer _springRenderer;
     private Vector2 _targetPosition;
     private float _currentJumpDistance;
     private bool _isJumpButtonHeld;
@@ -48,6 +49,7 @@ public class FrogController : MonoBehaviour
     {
         _rigidbody = GetComponent<Rigidbody2D>();
         _animator = GetComponent<Animator>();
+        _springRenderer = GetComponentInChildren<SpriteRenderer>();
     }
 
     /// <summary>
@@ -127,8 +129,6 @@ public class FrogController : MonoBehaviour
             {
                 dir = Direction.Right;
             }
-
-            Debug.Log("Direction: " + dir);
         }
     }
     #endregion
@@ -142,17 +142,23 @@ public class FrogController : MonoBehaviour
         switch (dir)
         {
             case Direction.Up:
+                _animator.SetBool("IsSide", false);
                 _targetPosition = new Vector2(transform.position.x, transform.position.y + _currentJumpDistance);
+                transform.localScale = Vector3.one;
                 break;
             case Direction.Left:
+                _animator.SetBool("IsSide", true);
                 _targetPosition = new Vector2(transform.position.x - _currentJumpDistance, transform.position.y);
+                transform.localScale = Vector3.one;
                 break;
             case Direction.Right:
+                _animator.SetBool("IsSide", true);
                 _targetPosition = new Vector2(transform.position.x + _currentJumpDistance, transform.position.y);
+                transform.localScale = new Vector3(-1, 1, 1);
                 break;
         }
-        _animator.SetTrigger("Jump");
 
+        _animator.SetTrigger("Jump");
     }
 
     /// <summary>
@@ -161,6 +167,7 @@ public class FrogController : MonoBehaviour
     public void OnJumpAnimationStarted()
     {
         _isJumping = true;
+        _springRenderer.sortingLayerName = "Front";
     }
 
     /// <summary>
@@ -169,6 +176,7 @@ public class FrogController : MonoBehaviour
     public void OnJumpAnimationCompleted()
     {
         _isJumping = false;
+        _springRenderer.sortingLayerName = "Middle";
     }
     #endregion
 }
