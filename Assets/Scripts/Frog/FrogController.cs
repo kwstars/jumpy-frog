@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -26,6 +25,7 @@ public class FrogController : MonoBehaviour
     private float _currentJumpHeight;
     private bool _isJumpButtonHeld;
     private bool _isJumping;
+    private bool _shouldTriggerJump;
     private Vector2 _touchPosition;
     #endregion
 
@@ -36,6 +36,7 @@ public class FrogController : MonoBehaviour
     private void Awake()
     {
         _rigidbody = GetComponent<Rigidbody2D>();
+        _animator = GetComponent<Animator>();
     }
 
     /// <summary>
@@ -43,9 +44,10 @@ public class FrogController : MonoBehaviour
     /// </summary>
     private void Update()
     {
-        if (_targetPosition.y - transform.position.y < 0.1f)
+        if (_shouldTriggerJump)
         {
-            _isJumping = false;
+            TriggerJumpAnimation();
+            _shouldTriggerJump = false;
         }
     }
 
@@ -55,9 +57,7 @@ public class FrogController : MonoBehaviour
     private void FixedUpdate()
     {
         if (_isJumping)
-        {
             _rigidbody.position = Vector2.Lerp(transform.position, _targetPosition, jumpMovementSpeed);
-        }
     }
     #endregion
 
@@ -68,12 +68,11 @@ public class FrogController : MonoBehaviour
     /// <param name="context">Input action callback context</param>
     public void OnJumpPerformed(InputAction.CallbackContext context)
     {
-        Debug.Log("Jump performed: " + context.performed);
         if (context.performed && !_isJumping)
         {
             _currentJumpHeight = jumpHeight;
             _targetPosition = new Vector2(transform.position.x, transform.position.y + _currentJumpHeight);
-            _isJumping = true;
+            _shouldTriggerJump = true;
         }
     }
 
@@ -93,7 +92,7 @@ public class FrogController : MonoBehaviour
         {
             _isJumpButtonHeld = false;
             _targetPosition = new Vector2(transform.position.x, transform.position.y + _currentJumpHeight);
-            _isJumping = true;
+            _shouldTriggerJump = true;
         }
     }
 
@@ -108,6 +107,32 @@ public class FrogController : MonoBehaviour
             _touchPosition = context.ReadValue<Vector2>();
             // Touch position can be used for additional controls if needed
         }
+    }
+    #endregion
+
+    #region Animation Methods
+    /// <summary>
+    /// Triggers the jump animation.
+    /// </summary>
+    private void TriggerJumpAnimation()
+    {
+        _animator.SetTrigger("Jump");
+    }
+
+    /// <summary>
+    /// Called by animation event when jump starts.
+    /// </summary>
+    public void OnJumpAnimationStarted()
+    {
+        _isJumping = true;
+    }
+
+    /// <summary>
+    /// Called by animation event when jump completes.
+    /// </summary>
+    public void OnJumpAnimationCompleted()
+    {
+        _isJumping = false;
     }
     #endregion
 }
